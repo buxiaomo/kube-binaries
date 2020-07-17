@@ -48,7 +48,8 @@ if __name__ == "__main__":
         version_dict = {
             "etcd": [],
             "docker": [],
-            "kubernetes": []
+            "kubernetes": [],
+            "cni": []
         }
 
     # etcd
@@ -124,6 +125,25 @@ if __name__ == "__main__":
                 else:
                     print("版本以同步(%s)，跳过..." % release.get("tag_name"))
 
+    else:
+        print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
+
+    # CNI
+    req = requests.get("https://api.github.com/repos/containernetworking/plugins/releases")
+    if req.status_code != 403:
+        for release in json.loads(req.text):
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+                for assets in release.get("assets"):
+                    if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1 and assets.get("name").find("sha1") == -1:
+                        if release.get("tag_name") not in version_dict.get("cni"):
+                            path = "containernetworking/plugins/releases/download/%s" % release.get("tag_name")
+                            os.makedirs(path, exist_ok=True)
+                            print("开始下载: %s" % (assets.get("name")))
+                            download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
+                            version_dict.get("cni").append(release.get("tag_name"))
+                            save_version(version_dict, "version.json")
+                        else:
+                            print("版本以同步(%s)，跳过..." % assets.get("name"))
     else:
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
