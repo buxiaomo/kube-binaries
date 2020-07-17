@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 for assets in release.get("assets"):
                     if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1 and assets.get("name").find("sha1") == -1:
                         if release.get("tag_name") not in version_dict.get("cni"):
-                            path = "containernetworking/plugins/releases/download/%s" % release.get("tag_name")
+                            path = "package/containernetworking/plugins/releases/download/%s" % release.get("tag_name")
                             os.makedirs(path, exist_ok=True)
                             print("开始下载: %s" % (assets.get("name")))
                             download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
