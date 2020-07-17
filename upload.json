@@ -1,5 +1,4 @@
 {
     "bucket" : "kube-binaries-us",
-    "src_dir" : "package",
-    "overwrite": true
+    "src_dir" : "package"
 }
