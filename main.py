@@ -6,6 +6,14 @@ import time
 import requests
 
 
+def save_version(data, file):
+    data['kubernetes'] = list(set(data.get("kubernetes")))
+    data['etcd'] = list(set(data.get("etcd")))
+    data['docker'] = list(set(data.get("docker")))
+    with open(file, "w") as f:
+        json.dump(data, f)
+
+
 def download(url, path):
     start = time.time()
     size = 0
@@ -56,8 +64,7 @@ if __name__ == "__main__":
                             print("开始下载: %s" % (assets.get("name")))
                             download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
                             version_dict.get("etcd").append(release.get("tag_name"))
-                            with open("version.json", "w") as f:
-                                json.dump(version_dict, f)
+                            save_version(version_dict, "version.json")
                         else:
                             print("版本以同步(%s)，跳过..." % assets.get("name"))
     else:
@@ -73,8 +80,9 @@ if __name__ == "__main__":
                     os.makedirs(path, exist_ok=True)
                     print("开始下载: %s" % (release.get("tag_name")))
                     r = download(
-                        url="https://download.docker.com/linux/static/stable/x86_64/docker-%s.tgz" % release.get("tag_name").replace('v',''),
-                        path=path + "/docker-%s.tgz" % (release.get("tag_name").replace('v',''))
+                        url="https://download.docker.com/linux/static/stable/x86_64/docker-%s.tgz" % release.get(
+                            "tag_name").replace('v', ''),
+                        path=path + "/docker-%s.tgz" % (release.get("tag_name").replace('v', ''))
                     )
                     if r:
                         version_dict.get("docker").append(release.get("tag_name"))
@@ -86,18 +94,27 @@ if __name__ == "__main__":
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
     # kubernetes
-    kubernetes_list = ["kube-apiserver", "kube-controller-manager", "kube-scheduler", "kubectl", "kube-proxy", "kubelet"]
+    kubernetes_list = [
+        "kube-apiserver",
+        "kube-controller-manager",
+        "kube-scheduler",
+        "kubectl",
+        "kube-proxy",
+        "kubelet"
+    ]
     req = requests.get("https://api.github.com/repos/kubernetes/kubernetes/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):
-            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1 and release.get("tag_name").find("alpha") == -1:
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1 and release.get(
+                    "tag_name").find("alpha") == -1:
                 path = "package/kubernetes-release/release/%s/bin/linux/amd64" % (release.get("tag_name"))
                 os.makedirs(path, exist_ok=True)
                 if release.get("tag_name") not in version_dict.get("kubernetes"):
                     for name in kubernetes_list:
                         print("开始下载: %s, %s" % (release.get("tag_name"), name))
                         r = download(
-                            url="https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s" % (release.get("tag_name"), name),
+                            url="https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s" % (
+                            release.get("tag_name"), name),
                             path=path + "/" + name
                         )
                         if r:
@@ -109,3 +126,6 @@ if __name__ == "__main__":
 
     else:
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
+
+
+    save_version(version_dict, "version.json")

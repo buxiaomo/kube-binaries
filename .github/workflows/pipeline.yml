@@ -13,6 +13,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
+    - name: Setup qiniu qshell environment
+      uses: foxundermoon/setup-qshell@v1.0
+      with:
+        qshell-version: 2.4.2
+
     - name: Clean up disk space
       run: |
         set -x
@@ -43,7 +48,18 @@ jobs:
         sudo apt-get install python3 python3-pip tree -y
         sudo timedatectl set-timezone Asia/Shanghai
 
-    - name: Download
+    - name: Download package
       run: |
         python3 ./main.py
         tree .
+
+    - name: Sync to qiniu
+      run: |
+        qshell account ${{ secrets.AccessKey }} ${{ secrets.SecretKey }} default
+        qshell qupload upload.json
+
+    - name: Auto commit
+      run: |
+        git add .
+        git commit -m 'auto commit'
+        git push origin master
