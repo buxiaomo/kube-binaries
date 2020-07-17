@@ -43,47 +43,47 @@ if __name__ == "__main__":
             "kubernetes": []
         }
 
-    # # etcd
-    # req = requests.get("https://api.github.com/repos/coreos/etcd/releases")
-    # if req.status_code != 403:
-    #     for release in json.loads(req.text):
-    #         if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
-    #             for assets in release.get("assets"):
-    #                 if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1:
-    #                     if release.get("tag_name") not in version_dict.get("etcd"):
-    #                         path = "package/coreos/etcd/releases/download/%s" % release.get("tag_name")
-    #                         os.makedirs(path, exist_ok=True)
-    #                         print("开始下载: %s" % (assets.get("name")))
-    #                         download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
-    #                         version_dict.get("etcd").append(release.get("tag_name"))
-    #                         with open("version.json", "w") as f:
-    #                             json.dump(version_dict, f)
-    #                     else:
-    #                         print("版本以同步(%s)，跳过..." % assets.get("name"))
-    # else:
-    #     print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
-    #
-    # # docker
-    # req = requests.get("https://api.github.com/repos/docker/docker-ce/releases")
-    # if req.status_code != 403:
-    #     for release in json.loads(req.text):
-    #         if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
-    #             if release.get("tag_name") not in version_dict.get("docker"):
-    #                 path = "package/linux/static/stable/x86_64"
-    #                 os.makedirs(path, exist_ok=True)
-    #                 print("开始下载: %s" % (release.get("tag_name")))
-    #                 r = download(
-    #                     url="https://download.docker.com/linux/static/stable/x86_64/docker-%s.tgz" % release.get("tag_name").replace('v',''),
-    #                     path=path + "/docker-%s.tgz" % (release.get("tag_name").replace('v',''))
-    #                 )
-    #                 if r:
-    #                     version_dict.get("docker").append(release.get("tag_name"))
-    #                 with open("version.json", "w") as f:
-    #                     json.dump(version_dict, f)
-    #             else:
-    #                 print("版本以同步(%s)，跳过..." % release.get("tag_name"))
-    # else:
-    #     print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
+    # etcd
+    req = requests.get("https://api.github.com/repos/coreos/etcd/releases")
+    if req.status_code != 403:
+        for release in json.loads(req.text):
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+                for assets in release.get("assets"):
+                    if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1:
+                        if release.get("tag_name") not in version_dict.get("etcd"):
+                            path = "package/coreos/etcd/releases/download/%s" % release.get("tag_name")
+                            os.makedirs(path, exist_ok=True)
+                            print("开始下载: %s" % (assets.get("name")))
+                            download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
+                            version_dict.get("etcd").append(release.get("tag_name"))
+                            with open("version.json", "w") as f:
+                                json.dump(version_dict, f)
+                        else:
+                            print("版本以同步(%s)，跳过..." % assets.get("name"))
+    else:
+        print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
+
+    # docker
+    req = requests.get("https://api.github.com/repos/docker/docker-ce/releases")
+    if req.status_code != 403:
+        for release in json.loads(req.text):
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+                if release.get("tag_name") not in version_dict.get("docker"):
+                    path = "package/linux/static/stable/x86_64"
+                    os.makedirs(path, exist_ok=True)
+                    print("开始下载: %s" % (release.get("tag_name")))
+                    r = download(
+                        url="https://download.docker.com/linux/static/stable/x86_64/docker-%s.tgz" % release.get("tag_name").replace('v',''),
+                        path=path + "/docker-%s.tgz" % (release.get("tag_name").replace('v',''))
+                    )
+                    if r:
+                        version_dict.get("docker").append(release.get("tag_name"))
+                    with open("version.json", "w") as f:
+                        json.dump(version_dict, f)
+                else:
+                    print("版本以同步(%s)，跳过..." % release.get("tag_name"))
+    else:
+        print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
     # kubernetes
     kubernetes_list = ["kube-apiserver", "kube-controller-manager", "kube-scheduler", "kubectl", "kube-proxy", "kubelet"]
