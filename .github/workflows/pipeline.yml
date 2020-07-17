@@ -1,0 +1,49 @@
+name: kube-ansbile
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+     - name: Clean up disk space
+       run: |
+         set -x
+         [ test -f /swapfile ] && sudo swapoff /swapfile
+         [ test -f ] && sudo rm -rf /swapfile
+         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+         docker rmi $(docker images -q)
+         sudo apt-get -y purge \
+           azure-cli \
+           ghc* \
+           zulu* \
+           hhvm \
+           llvm* \
+           firefox \
+           google* \
+           dotnet* \
+           powershell \
+           openjdk* \
+           mysql* \
+           php* \
+           docker* \
+           containerd*
+         sudo apt autoremove --purge -y
+
+    - name: Initialization environment
+      run: |
+        set -x
+        sudo apt-get install python3 python3-pip tree -y
+        sudo timedatectl set-timezone Asia/Shanghai
+
+    - name: Download
+      run: |
+        python3 ./main.py
+        tree .
