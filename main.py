@@ -1,9 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
+import sys
 import os
 import json
 import time
 import requests
+import getopt
 
 
 def save_version(data, file):
@@ -15,24 +17,28 @@ def save_version(data, file):
 
 
 def download(url, path):
+    print(url, path)
     start = time.time()
     size = 0
     chunk_size = 1024
     req = requests.get(url, stream=True)
     content_size = int(req.headers.get("content-length"))
-    if req.status_code == 200:
-        with open(path, 'wb') as file:
-            # print("文件大小：%0.2f MB" % (content_size / chunk_size / 1024))
-            for data in req.iter_content(chunk_size=chunk_size):
-                file.write(data)
-                size += len(data)
-                print("\r" + "[下载进度]: %s %.2f%%" % (
-                    '>' * int(size * 50 / content_size), float(size / content_size * 100)), end='')
-    else:
-        return False
-    end = time.time()
-    print("\n下载完成，用时：%.2f s" % (end - start))
-    return True
+    try:
+        if req.status_code == 200:
+            with open(path, 'wb') as file:
+                # print("文件大小：%0.2f MB" % (content_size / chunk_size / 1024))
+                for data in req.iter_content(chunk_size=chunk_size):
+                    file.write(data)
+                    size += len(data)
+                    print("\r" + "[下载进度]: %s %.2f%%" % ('>' * int(size * 50 / content_size), float(size / content_size * 100)))
+        else:
+            return False
+        end = time.time()
+        print("\n下载完成，用时：%.2f s" % (end - start))
+        return True
+    except Exception as e:
+        print(e)
+        return False 
 
 
 def timestamp_to_time(timestamp):
@@ -51,6 +57,51 @@ if __name__ == "__main__":
             "kubernetes": [],
             "cni": []
         }
+
+    kubernetes_list = [
+        "kube-apiserver",
+        "kube-controller-manager",
+        "kube-scheduler",
+        "kubectl",
+        "kube-proxy",
+        "kubelet"
+    ]
+    etcd_version = ""
+    cni_version = ""
+    kubernetes_version = ""
+    docker_version = ""
+
+    opts, args = getopt.getopt(sys.argv[1:],"he:c:k:d:",["etcd=", "cni=", "kubernetes=", "docker="])
+    for opt, arg in opts:
+        if opt == '-h':
+            print ( 'main.py -e <etcd version> -c <cni version> -k <kubernetes version> -d <docker version>' )
+            sys.exit()
+        elif opt in ("-e", "--etcd"):
+            etcd_version = arg
+        elif opt in ("-c", "--cni"):
+            cni_version = arg
+        elif opt in ("-k", "--kubernetes"):
+            kubernetes_version = arg
+        elif opt in ("-d", "--docker"):
+            docker_version = arg
+
+    if etcd_version != "" or cni_version != "" or kubernetes_version != "" or cni_version != "":
+        for name in kubernetes_list:
+            print("开始下载: %s" % (name))
+            print("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s" % (
+                kubernetes_version, name))
+            path = "package/kubernetes-release/release/%s/bin/linux/amd64" % (kubernetes_version)
+            os.makedirs(path, exist_ok=True)
+            r = download(
+                url="https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s" % (
+                kubernetes_version, name),
+                path=path + "/" + name
+            )
+            if r:
+                version_dict.get("kubernetes").append(kubernetes_version)
+            with open("version.json", "w") as f:
+                json.dump(version_dict, f)
+        sys.exit(0)
 
     # etcd
     req = requests.get("https://api.github.com/repos/coreos/etcd/releases")
@@ -95,14 +146,6 @@ if __name__ == "__main__":
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
     # kubernetes
-    kubernetes_list = [
-        "kube-apiserver",
-        "kube-controller-manager",
-        "kube-scheduler",
-        "kubectl",
-        "kube-proxy",
-        "kubelet"
-    ]
     req = requests.get("https://api.github.com/repos/kubernetes/kubernetes/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):

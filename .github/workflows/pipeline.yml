@@ -60,6 +60,8 @@ jobs:
 
     - name: Auto commit
       run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
         git add .
         git commit -m 'auto commit'
         git push origin master
