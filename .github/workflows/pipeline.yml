@@ -19,11 +19,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Setup qiniu qshell environment
-      uses: foxundermoon/setup-qshell@v1.0
-      with:
-        qshell-version: 2.4.2
-
     - name: Clean up disk space
       run: |
         set -x
@@ -61,6 +56,11 @@ jobs:
 
     - name: Sync to qiniu
       run: |
+        pushd /usr/local/src
+        sudo wget http://devtools.qiniu.com/qshell-linux-x86-v2.4.2.zip
+        sudo unzip qshell-linux-x86-v2.4.2.zip
+        sudo mv qshell-linux-x86-v2.4.2 /usr/local/bin/qshell
+        popd
         qshell account ${{ secrets.AccessKey }} ${{ secrets.SecretKey }} default
         qshell qupload upload.json
 
