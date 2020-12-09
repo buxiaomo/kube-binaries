@@ -1,4 +1,4 @@
-name: kube-ansbile
+name: kube-binaries
 
 on:
   push:
