@@ -123,7 +123,7 @@ if __name__ == "__main__":
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
     # docker
-    req = requests.get("https://api.github.com/repos/docker/docker-ce/releases")
+    req = requests.get("https://api.github.com/repos/moby/moby/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):
             if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
