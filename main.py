@@ -12,8 +12,17 @@ def save_version(data, file):
     data['kubernetes'] = list(set(data.get("kubernetes")))
     data['etcd'] = list(set(data.get("etcd")))
     data['docker'] = list(set(data.get("docker")))
+    data['cni'] = list(set(data.get("cni")))
+    data['containerd'] = list(set(data.get("containerd")))
+    data['crictl'] = list(set(data.get("crictl")))
+    data['runc'] = list(set(data.get("runc")))
     with open(file, "w") as f:
         json.dump(data, f)
+
+
+def timestamp_to_time(timestamp):
+    time_local = time.localtime(int(timestamp))
+    return time.strftime("%Y-%m-%d %H:%M:%S", time_local)
 
 
 def download(url, path):
@@ -30,7 +39,8 @@ def download(url, path):
                 for data in req.iter_content(chunk_size=chunk_size):
                     file.write(data)
                     size += len(data)
-                    print("\r" + "[下载进度]: %s %.2f%%" % ('>' * int(size * 50 / content_size), float(size / content_size * 100)))
+                    print("\r" + "[下载进度]: %s %.2f%%" % (
+                        '>' * int(size * 50 / content_size), float(size / content_size * 100)))
         else:
             return False
         end = time.time()
@@ -38,12 +48,7 @@ def download(url, path):
         return True
     except Exception as e:
         print(e)
-        return False 
-
-
-def timestamp_to_time(timestamp):
-    time_local = time.localtime(int(timestamp))
-    return time.strftime("%Y-%m-%d %H:%M:%S", time_local)
+        return False
 
 
 if __name__ == "__main__":
@@ -55,7 +60,10 @@ if __name__ == "__main__":
             "etcd": [],
             "docker": [],
             "kubernetes": [],
-            "cni": []
+            "cni": [],
+            "containerd": [],
+            "crictl": [],
+            "runc": []
         }
 
     kubernetes_list = [
@@ -71,10 +79,10 @@ if __name__ == "__main__":
     kubernetes_version = ""
     docker_version = ""
 
-    opts, args = getopt.getopt(sys.argv[1:],"he:c:k:d:",["etcd=", "cni=", "kubernetes=", "docker="])
+    opts, args = getopt.getopt(sys.argv[1:], "he:c:k:d:", ["etcd=", "cni=", "kubernetes=", "docker="])
     for opt, arg in opts:
         if opt == '-h':
-            print ( 'main.py -e <etcd version> -c <cni version> -k <kubernetes version> -d <docker version>' )
+            print('main.py -e <etcd version> -c <cni version> -k <kubernetes version> -d <docker version>')
             sys.exit()
         elif opt in ("-e", "--etcd"):
             etcd_version = arg
@@ -94,7 +102,7 @@ if __name__ == "__main__":
             os.makedirs(path, exist_ok=True)
             r = download(
                 url="https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s" % (
-                kubernetes_version, name),
+                    kubernetes_version, name),
                 path=path + "/" + name
             )
             if r:
@@ -107,7 +115,8 @@ if __name__ == "__main__":
     req = requests.get("https://api.github.com/repos/coreos/etcd/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):
-            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1 and release.get("tag_name").find("alpha") == -1:
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1 and release.get(
+                    "tag_name").find("alpha") == -1:
                 for assets in release.get("assets"):
                     if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1:
                         if release.get("tag_name") not in version_dict.get("etcd"):
@@ -126,7 +135,7 @@ if __name__ == "__main__":
     req = requests.get("https://api.github.com/repos/moby/moby/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):
-            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1 and release.get("tag_name").find("ce") == -1:
                 if release.get("tag_name") not in version_dict.get("docker"):
                     path = "package/linux/static/stable/x86_64"
                     os.makedirs(path, exist_ok=True)
@@ -158,7 +167,7 @@ if __name__ == "__main__":
                         print("开始下载: %s, %s" % (release.get("tag_name"), name))
                         r = download(
                             url="https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s" % (
-                            release.get("tag_name"), name),
+                                release.get("tag_name"), name),
                             path=path + "/" + name
                         )
                         if r:
@@ -177,7 +186,8 @@ if __name__ == "__main__":
         for release in json.loads(req.text):
             if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
                 for assets in release.get("assets"):
-                    if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1 and assets.get("name").find("sha1") == -1:
+                    if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find(
+                            "asc") == -1 and assets.get("name").find("sha1") == -1:
                         if release.get("tag_name") not in version_dict.get("cni"):
                             path = "package/containernetworking/plugins/releases/download/%s" % release.get("tag_name")
                             os.makedirs(path, exist_ok=True)
@@ -190,5 +200,65 @@ if __name__ == "__main__":
     else:
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
+    # runc
+    req = requests.get("https://api.github.com/repos/opencontainers/runc/releases")
+    if req.status_code != 403:
+        for release in json.loads(req.text):
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+                for assets in release.get("assets"):
+                    if assets.get("name").find("asc") == -1 and assets.get("name").find("sha1") == -1 and assets.get(
+                            "name").find("runc.amd64") != -1:
+                        if release.get("tag_name") not in version_dict.get("runc"):
+                            path = "package/opencontainers/runc/releases/download/%s" % release.get("tag_name")
+                            os.makedirs(path, exist_ok=True)
+                            print("开始下载: %s, 版本：%s" % (assets.get("name"), release.get("tag_name")))
+                            download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
+                            version_dict.get("runc").append(release.get("tag_name"))
+                            save_version(version_dict, "version.json")
+                        else:
+                            print("版本以同步(%s)，跳过..." % assets.get("name"))
+    else:
+        print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
+
+    # containerd
+    req = requests.get("https://api.github.com/repos/kubernetes-sigs/cri-tools/releases")
+    if req.status_code != 403:
+        for release in json.loads(req.text):
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+                for assets in release.get("assets"):
+                    if assets.get("name").find("asc") == -1 and assets.get("name").find("sha") == -1 and assets.get(
+                            "name").find("cri") == -1 and assets.get("name").find("linux-amd64") != -1:
+                        if release.get("tag_name") not in version_dict.get("containerd"):
+                            path = "package/kubernetes-sigs/cri-tools/releases/download/%s" % release.get("tag_name")
+                            os.makedirs(path, exist_ok=True)
+                            print("开始下载: %s, 版本：%s" % (assets.get("name"), release.get("tag_name")))
+                            download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
+                            version_dict.get("containerd").append(release.get("tag_name"))
+                            save_version(version_dict, "version.json")
+                        else:
+                            print("版本以同步(%s)，跳过..." % assets.get("name"))
+    else:
+        print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
+
+    # crictl
+    req = requests.get("https://api.github.com/repos/kubernetes-sigs/cri-tools/releases")
+    if req.status_code != 403:
+        for release in json.loads(req.text):
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+                for assets in release.get("assets"):
+                    if assets.get("name").find("asc") == -1 and assets.get("name").find("sha") == -1 and assets.get(
+                            "name").find("alpha") == -1 and assets.get("name").find("linux-amd64") != -1 and assets.get(
+                        "name").find("critest") == -1:
+                        if release.get("tag_name") not in version_dict.get("containerd"):
+                            path = "package/kubernetes-sigs/cri-tools/releases/download/%s" % release.get("tag_name")
+                            os.makedirs(path, exist_ok=True)
+                            print("开始下载: %s, 版本：%s" % (assets.get("name"), release.get("tag_name")))
+                            download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
+                            version_dict.get("crictl").append(release.get("tag_name"))
+                            save_version(version_dict, "version.json")
+                        else:
+                            print("版本以同步(%s)，跳过..." % assets.get("name"))
+    else:
+        print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
     save_version(version_dict, "version.json")
