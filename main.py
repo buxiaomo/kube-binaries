@@ -221,7 +221,7 @@ if __name__ == "__main__":
         print("reset time: %s" % timestamp_to_time(req.headers.get("X-Ratelimit-Reset")))
 
     # containerd
-    req = requests.get("https://api.github.com/repos/kubernetes-sigs/cri-tools/releases")
+    req = requests.get("https://api.github.com/repos/containerd/containerd/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):
             if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
@@ -229,7 +229,7 @@ if __name__ == "__main__":
                     if assets.get("name").find("asc") == -1 and assets.get("name").find("sha") == -1 and assets.get(
                             "name").find("cri") == -1 and assets.get("name").find("linux-amd64") != -1:
                         if release.get("tag_name") not in version_dict.get("containerd"):
-                            path = "package/kubernetes-sigs/cri-tools/releases/download/%s" % release.get("tag_name")
+                            path = "package/containerd/containerd/releases/download/%s" % release.get("tag_name")
                             os.makedirs(path, exist_ok=True)
                             print("开始下载: %s, 版本：%s" % (assets.get("name"), release.get("tag_name")))
                             download(url=assets.get("browser_download_url"), path=path + "/" + assets.get("name"))
