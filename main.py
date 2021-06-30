@@ -107,7 +107,7 @@ if __name__ == "__main__":
     req = requests.get("https://api.github.com/repos/coreos/etcd/releases")
     if req.status_code != 403:
         for release in json.loads(req.text):
-            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1:
+            if release.get("tag_name").find("rc") == -1 and release.get("tag_name").find("beta") == -1 and release.get("tag_name").find("alpha") == -1:
                 for assets in release.get("assets"):
                     if assets.get("name").find("linux-amd64") != -1 and assets.get("name").find("asc") == -1:
                         if release.get("tag_name") not in version_dict.get("etcd"):
